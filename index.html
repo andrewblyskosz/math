@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Math Dash</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(160deg,#1e3a8a,#7c3aed);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;color:#1f2937}
+  .card{background:#fff;border-radius:20px;max-width:520px;width:100%;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.3);text-align:center}
+  h1{margin:0 0 10px;font-size:30px;color:#4c1d95}
+  .sub{color:#6b7280;margin-bottom:14px;min-height:42px}
+  .stats{display:flex;justify-content:space-between;align-items:center;font-weight:600;margin-bottom:12px;font-size:15px}
+  .bar{height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;margin-bottom:16px}
+  .bar div{height:100%;width:0;background:#22c55e;transition:width .3s}
+  .problem{font-size:34px;font-weight:700;margin:4px 0 6px;font-variant-numeric:tabular-nums}
+  .step{min-height:44px;color:#4b5563;font-size:15px;margin-bottom:10px}
+  .step b{color:#4c1d95}
+
+  /* tabs */
+  .tabs{display:flex;gap:4px;border-bottom:3px solid #ede9fe}
+  .tab{flex:1;min-width:0;border:none;background:#f5f3ff;color:#6d28d9;font-weight:700;font-size:13px;padding:8px 2px 6px;border-radius:12px 12px 0 0;cursor:pointer;line-height:1.1}
+  .tab i{display:block;font-style:normal;font-size:24px;line-height:1.1}
+  .tab:hover{background:#ede9fe}
+  .tab.sel{background:#7c3aed;color:#fff}
+  .tabbody{padding-top:16px}
+  .tutorial{margin:6px 0 4px;padding:12px;border:3px dashed #f59e0b;background:#fffbeb;border-radius:14px}
+  .tutorial .ttl{font-weight:800;color:#b45309;letter-spacing:1px;font-size:14px}
+  .tutorial .tsub{font-size:14px;color:#78350f;margin:2px 0 8px}
+  .tbtn{display:inline-block;background:#dc2626;color:#fff;text-decoration:none;font-weight:700;font-size:16px;padding:10px 16px;border-radius:12px}
+  .tbtn:hover{background:#b91c1c}
+  .tabtitle{font-size:22px;font-weight:800;color:#4c1d95;margin-bottom:4px}
+
+  #grid{display:grid;justify-content:center;align-items:center;gap:6px 6px;margin:6px auto 4px}
+  .box{width:clamp(38px,11vw,54px);height:clamp(42px,12vw,58px);font-size:clamp(22px,7vw,32px);font-weight:700;text-align:center;border:3px solid #c4b5fd;border-radius:10px;outline:none;padding:0;background:#fff;color:#1f2937;font-family:inherit}
+  .box:focus{border-color:#7c3aed;box-shadow:0 0 0 3px #ddd6fe}
+  .box.carry{width:clamp(28px,8vw,38px);height:clamp(28px,8vw,38px);font-size:clamp(16px,5vw,20px);border:2px dashed #fb923c;background:#fff7ed;color:#c2410c;border-radius:8px;justify-self:center}
+  .box.carry:focus{box-shadow:0 0 0 3px #fed7aa}
+  .box.carry.borrow{width:clamp(34px,10vw,46px);border-color:#2dd4bf;background:#f0fdfa;color:#0f766e}
+  .box.carry.borrow:focus{box-shadow:0 0 0 3px #99f6e4}
+  .box:disabled{background:#f3f4f6;border-color:#e5e7eb;color:#9ca3af}
+  .box.carry:disabled{background:#fafafa;border:2px dashed #e5e7eb}
+  .box.lock,.box.lock:disabled{background:#f5f3ff;border-color:#ddd6fe;color:#4c1d95}
+  .box.ok,.box.ok:disabled,.box.carry.ok,.box.carry.borrow.ok{border-color:#22c55e;background:#dcfce7;color:#166534}
+  .box.bad,.box.bad:disabled,.box.carry.bad,.box.carry.borrow.bad{border-color:#ef4444;background:#fee2e2;color:#991b1b;animation:shake .3s}
+  .box.reveal,.box.reveal:disabled,.box.carry.reveal,.box.carry.borrow.reveal{border-color:#3b82f6;background:#dbeafe;color:#1e3a8a}
+  @keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .cell{display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#4c1d95;height:100%}
+  .line{grid-column:1/-1;height:5px;background:#1f2937;border-radius:3px;margin:2px 0}
+
+  button.main{font-size:20px;font-weight:700;border:none;border-radius:12px;padding:12px 28px;margin-top:14px;background:#7c3aed;color:#fff;cursor:pointer}
+  button.main:hover{background:#6d28d9}
+  button.home{font-size:14px;font-weight:700;border:none;border-radius:10px;padding:6px 10px;background:#ede9fe;color:#4c1d95;cursor:pointer}
+  button.home:hover{background:#ddd6fe}
+  #home2{margin-left:8px;background:#e5e7eb;color:#4c1d95}
+  .msg{min-height:56px;margin-top:10px;font-size:17px;font-weight:600}
+  .good{color:#16a34a}.bad-t{color:#dc2626}.meh{color:#c2410c}
+  .big{font-size:64px;margin:10px 0}
+  .lbl{font-weight:600;margin-top:12px}
+  .levels{display:flex;gap:8px;justify-content:center;margin:10px 0 6px}
+  .levels button{font-size:16px;padding:10px 12px;border:none;border-radius:12px;background:#ede9fe;color:#4c1d95;font-weight:700;cursor:pointer;flex:1;max-width:150px}
+  .levels button small{font-weight:500;display:block;font-size:11px;margin-top:2px}
+  .levels button.sel{background:#7c3aed;color:#fff}
+  .credit{margin-top:18px;font-size:11px;color:#9ca3af}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div id="start">
+    <h1>🎯 Math Dash</h1>
+    <div class="tabs" id="ops">
+      <button class="tab sel" data-op="add"><i>+</i>Add</button>
+      <button class="tab" data-op="sub"><i>−</i>Subtract</button>
+      <button class="tab" data-op="mul"><i>×</i>Multiply</button>
+      <button class="tab" data-op="div"><i>÷</i>Divide</button>
+    </div>
+    <div class="tabbody">
+      <div class="tabtitle" id="tabTitle"></div>
+      <div class="sub" id="tabDesc"></div>
+      <div class="tutorial">
+        <div class="ttl">📺 TUTORIAL</div>
+        <div class="tsub">Not sure how it works? Watch this short video first.</div>
+        <a id="tutLink" class="tbtn" href="#" target="_blank" rel="noopener noreferrer">▶ Watch the <span id="tutName"></span> tutorial</a>
+      </div>
+      <div class="lbl">Pick a level:</div>
+      <div class="levels" id="lvls">
+        <button data-lvl="1" class="sel">Easy<small id="l1"></small></button>
+        <button data-lvl="2">Medium<small id="l2"></small></button>
+        <button data-lvl="3">Hard<small id="l3"></small></button>
+      </div>
+      <button class="main" id="go">Start!</button>
+    </div>
+  </div>
+
+  <div id="play" class="hidden">
+    <div class="stats"><button class="home" id="home1" title="Back to start">🏠 Home</button><span id="qnum">Question 1/20</span><span id="streak">🔥 0</span><span id="score">⭐ 0</span></div>
+    <div class="bar"><div id="prog"></div></div>
+    <div class="problem" id="problem"></div>
+    <div class="step" id="step"></div>
+    <div id="grid"></div>
+    <div class="msg" id="msg"></div>
+    <button class="main" id="check">Check</button>
+  </div>
+
+  <div id="end" class="hidden">
+    <div class="big" id="medal"></div>
+    <h1 id="final"></h1>
+    <div class="sub" id="comment"></div>
+    <button class="main" id="again">Play again</button>
+    <button class="main" id="home2">🏠 Home</button>
+  </div>
+
+  <div class="credit">V.1 by Andrew Blyskosz</div>
+
+</div>
+
+<script>
+const TOTAL = 20;                       // questions per round
+const OPMAP = {add:'+', sub:'-', mul:'*', div:'/'};
+const SYM = {'+':'+','-':'−','*':'×','/':'÷'};
+// every question is worth 20 points
+const PTS = {setup:5, ans:10, aux:5};
+
+const INFO = {
+  add:{video:'https://www.youtube.com/watch?v=jX9_3wj5zbM', vname:'adding', title:'Adding', desc:'Line up the digits, add from the right, and carry when a column adds to 10 or more.', lv:['2-digit numbers','3-digit numbers','4-digit numbers']},
+  sub:{video:'https://www.youtube.com/watch?v=HlxqCdDrbdc', vname:'subtracting', title:'Subtracting', desc:'Line up the digits, subtract from the right, and borrow when the top digit is too small.', lv:['2-digit numbers','3-digit numbers','4-digit numbers']},
+  mul:{video:'https://www.youtube.com/watch?v=g5TmDrXeiR8', vname:'multiplying', title:'Multiplying', desc:'Multiply each digit from the right, and carry when the answer is 10 or more.', lv:['2-digit × 1-digit','3-digit × 1-digit','4-digit × 1-digit']},
+  div:{video:'https://www.youtube.com/watch?v=HJYHNxS64f0', vname:'dividing', title:'Dividing', desc:'Divide from the left, one digit at a time. Write the remainder in front of the next digit.', lv:['2-digit, no remainder','3-digit, no remainder','3-digit, with remainder']}
+};
+
+let level = 1, opMode = 'add', q = 0, score = 0, streak = 0, best = 0;
+let cur = null, lay = null, phase = 'setup', setupTries = 0, qPts = 0;
+let cells = {c:{}, a:{}, b:{}, s:{}, d:{}, r:{}};
+
+const $ = id => document.getElementById(id);
+const rnd = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+const splitCh = str => str.split('').map(ch => ch === ' ' ? '' : ch);
+
+/* =================== Problem makers =================== */
+function makeAddSub(op){
+  const [lo,hi] = level===1 ? [10,99] : level===2 ? [100,999] : [1000,9999];
+  let a, b;
+  do { a = rnd(lo,hi); b = rnd(lo,hi); } while(op==='-' && a===b);
+  if(op==='-' && a<b) [a,b] = [b,a];                      // answer never negative
+  return {op, A:String(a), B:String(b), res: op==='+' ? a+b : a-b};
+}
+
+function makeMul(){
+  const [lo,hi] = level===1 ? [12,99] : level===2 ? [100,999] : [1000,9999];
+  const a = rnd(lo,hi), d = rnd(2,9);
+  return {op:'*', A:String(a), B:String(d), Aint:a, d, P:a*d};
+}
+
+function makeDiv(){
+  const d = rnd(2,9);
+  let S, hasR = false;
+  if(level===1){ S = d * rnd(Math.max(3,Math.ceil(20/d)), Math.floor(99/d)); }
+  else if(level===2){ S = d * rnd(Math.ceil(100/d), Math.floor(999/d)); }
+  else {
+    hasR = true;
+    const r = Math.random()<0.2 ? 0 : rnd(1,d-1);
+    S = d * rnd(Math.ceil(100/d), Math.floor((999-r)/d)) + r;
+  }
+  return {op:'/', A:String(S), B:String(d), d, S, hasR};
+}
+
+/* =================== Layouts for column problems =================== */
+function layoutAddSub(p){
+  const aw = p.A, bw = p.B, sw = String(p.res);
+  const W = Math.max(aw.length, bw.length, sw.length);
+  const a = splitCh(aw.padStart(W,' '));
+  const b = splitCh(bw.padStart(W,' '));
+  const s = splitCh(sw.padStart(W,' '));
+  const n = W;
+  // aux[c] = what belongs in the little box above column c ('' = nothing)
+  //   add: '1' for a carry     subtract: the new value of the top digit after borrowing
+  const aux = new Array(n).fill('');
+  if(p.op === '+'){
+    let cin = 0;
+    for(let c=n-1; c>=0; c--){
+      const t = (+a[c]||0) + (+b[c]||0) + cin;
+      cin = t >= 10 ? 1 : 0;
+      if(c>0) aux[c-1] = cin ? '1' : '';
+    }
+  } else {
+    let lent = 0;
+    for(let c=n-1; c>=0; c--){
+      let top = (+a[c]||0) - lent;
+      const needs = top < (+b[c]||0);
+      if(needs) top += 10;
+      aux[c] = (lent || needs) ? String(top) : '';
+      lent = needs ? 1 : 0;
+    }
+  }
+  return {op:p.op, n, pt:-1, a, b, s, aux, rows:['c','a','b','s'], setupRows:['a','b']};
+}
+
+function layoutMul(p){
+  const aD = String(p.Aint), pD = String(p.P);
+  const n = Math.max(aD.length, pD.length);
+  const a = splitCh(aD.padStart(n,' '));
+  const b = splitCh(String(p.d).padStart(n,' '));
+  const s = splitCh(pD.padStart(n,' '));
+  const aux = new Array(n).fill('');
+  let carry = 0;
+  for(let c=n-1; c>=0; c--){
+    const t = (+a[c]||0)*p.d + carry;
+    carry = Math.floor(t/10);
+    if(c>0) aux[c-1] = carry>0 ? String(carry) : '';
+  }
+  return {op:'*', n, pt:-1, a, b, s, aux, rows:['c','a','b','s'], setupRows:['a','b']};
+}
+
+function layoutDiv(p){
+  const a = String(p.S).split(''), n = a.length;
+  const s = [], aux = new Array(n).fill('');
+  let rem = 0, started = false;
+  for(let c=0; c<n; c++){
+    const v = rem*10 + (+a[c]);
+    const qd = Math.floor(v / p.d);
+    rem = v % p.d;
+    if(qd>0) started = true;
+    s.push(started ? String(qd) : '');                       // no answer digit in front of the first one
+    if(c<n-1) aux[c+1] = rem>0 ? String(rem) : '';
+  }
+  return {op:'/', n, pt:-1, a, b:[], s, aux, rows:['s','c','a'], setupRows:['a'],
+          divisor:String(p.d), hasR:p.hasR, remStr:String(rem)};
+}
+
+const layoutFor = p => p.op==='*' ? layoutMul(p) : p.op==='/' ? layoutDiv(p) : layoutAddSub(p);
+const hasAux = l => l.aux.some(x => x!=='');
+const answerText = p => p.op==='*' ? String(p.P)
+  : p.op==='/' ? String(Math.floor(p.S/p.d)) + (p.hasR ? ' R ' + (p.S%p.d) : '')
+  : String(p.res);
+
+/* =================== Grid for column problems =================== */
+const hasAuxBox = i => lay.op==='-' ? true : lay.op==='/' ? i>0 : i<lay.n-1;
+const solveDir = () => lay.op==='/' ? 1 : -1;                  // divide goes left->right
+
+function buildGrid(){
+  const g = $('grid');
+  g.innerHTML = '';
+  cells = {c:{}, a:{}, b:{}, s:{}, d:{}, r:{}};
+  const {n, op} = lay;
+  const tpl = [op==='/' ? 'auto' : 'clamp(24px,7vw,36px)'];
+  for(let i=0;i<n;i++) tpl.push('auto');
+  if(lay.hasR){ tpl.push('auto'); tpl.push('auto'); }
+  g.style.gridTemplateColumns = tpl.join(' ');
+
+  const makeInput = (row, col, cls, maxLen) => {
+    const inp = document.createElement('input');
+    inp.className = 'box' + cls;
+    inp.type = 'text'; inp.inputMode = 'numeric'; inp.maxLength = maxLen; inp.autocomplete = 'off';
+    inp.dataset.row = row; inp.dataset.col = col;
+    inp.addEventListener('input', onInput);
+    inp.addEventListener('keydown', onKey);
+    inp.addEventListener('focus', () => inp.select());
+    cells[row][col] = inp;
+    return inp;
+  };
+  const makeRow = (row, signText) => {
+    if(op==='/' && row==='a'){ g.appendChild(makeInput('d', 0, '', 1)); }        // the divisor box
+    else { const sg = document.createElement('div'); sg.className='cell'; sg.textContent = signText||''; g.appendChild(sg); }
+    for(let i=0;i<n;i++){
+      if(row==='c' && !hasAuxBox(i)){ g.appendChild(document.createElement('div')); continue; }
+      const cls = row==='c' ? (op==='-' ? ' carry borrow' : ' carry') : '';
+      g.appendChild(makeInput(row, i, cls, (row==='c' && op==='-') ? 2 : 1));
+    }
+    if(lay.hasR){                                                               // the "R" (remainder) box
+      if(row==='s'){
+        const r = document.createElement('div'); r.className='cell'; r.textContent='R'; g.appendChild(r);
+        g.appendChild(makeInput('r', 0, '', 1));
+      } else { g.appendChild(document.createElement('div')); g.appendChild(document.createElement('div')); }
+    }
+  };
+  const addLine = () => { const l = document.createElement('div'); l.className='line'; g.appendChild(l); };
+  if(op==='/'){ makeRow('s'); addLine(); makeRow('c'); makeRow('a'); }
+  else { makeRow('c'); makeRow('a'); makeRow('b', SYM[op]); addLine(); makeRow('s'); }
+}
+
+/* =================== Typing + arrow navigation =================== */
+function focusCell(row, col){ const el = cells[row] && cells[row][col]; if(el && !el.disabled){ el.focus(); return true; } return false; }
+function moveH(row, col, dir){
+  for(let c = col+dir; c>=0 && c<lay.n; c+=dir){ if(focusCell(row,c)) return true; }
+  return false;
+}
+function moveV(row, col, dir){
+  const r0 = lay.rows.indexOf(row);
+  if(r0<0) return false;
+  for(let r = r0+dir; r>=0 && r<lay.rows.length; r+=dir){ if(focusCell(lay.rows[r], col)) return true; }
+  return false;
+}
+function onInput(e){
+  const el = e.target;
+  el.value = el.value.replace(/\D/g,'').slice(-el.maxLength);
+  el.classList.remove('ok','bad','reveal');
+  if(!el.value) return;
+  const row = el.dataset.row, col = +el.dataset.col;
+  if(row==='c' && lay.op==='-') return;                  // borrow boxes hold 2 digits: don't jump away
+  if(phase==='setup'){
+    if(row==='d'){ for(let c=0;c<lay.n;c++) if(focusCell('a',c)) break; return; }
+    if(!moveH(row,col,1)){
+      if(row==='a' && lay.op==='/') focusCell('d',0);
+      else if(row==='a'){ for(let c=0;c<lay.n;c++) if(focusCell('b',c)) break; }
+    }
+  } else if(!moveH(row,col,solveDir()) && row==='s' && lay.hasR) focusCell('r',0);
+}
+function onKey(e){
+  const el = e.target, row = el.dataset.row, col = +el.dataset.col;
+  if(e.key==='Enter'){ e.preventDefault(); mainAction(); }
+  else if(e.key==='ArrowLeft'){ e.preventDefault(); if(row==='r') focusCell('s',lay.n-1); else moveH(row,col,-1); }
+  else if(e.key==='ArrowRight'){ e.preventDefault(); if(row==='s' && col===lay.n-1 && lay.hasR) focusCell('r',0); else moveH(row,col,1); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); moveV(row,col,-1); }
+  else if(e.key==='ArrowDown'){ e.preventDefault(); moveV(row,col,1); }
+  else if(e.key==='Backspace' && !el.value){
+    e.preventDefault();
+    if(row==='r') focusCell('s',lay.n-1);
+    else moveH(row,col, phase==='setup' ? -1 : -solveDir());
+  }
+}
+
+/* =================== Game flow =================== */
+function show(id){ ['start','play','end'].forEach(s => $(s).classList.toggle('hidden', s!==id)); }
+function updateStats(){ $('score').textContent = '⭐ '+score; $('streak').textContent = '🔥 '+streak; }
+function addPts(n){ score += n; qPts += n; updateStats(); }
+
+function nextQ(){
+  if(q>=TOTAL) return finish();
+  q++; qPts = 0;
+  $('check').classList.remove('hidden');
+  $('qnum').textContent = `Question ${q}/${TOTAL}`;
+  $('prog').style.width = ((q-1)/TOTAL*100)+'%';
+  $('msg').innerHTML = '';
+  updateStats();
+  const thisOp = OPMAP[opMode];
+
+  let tries = 0;
+  do {
+    cur = thisOp==='*' ? makeMul() : thisOp==='/' ? makeDiv() : makeAddSub(thisOp);
+    lay = layoutFor(cur); lay.hasAux = hasAux(lay); tries++;
+  } while(!lay.hasAux && Math.random() < 0.8 && tries < 30);   // most problems need a carry / borrow / remainder
+  phase = 'setup'; setupTries = 0;
+  buildGrid();
+  for(const r of ['c','s','r']) Object.values(cells[r]).forEach(el => el.disabled = true);
+  $('problem').textContent = `${cur.A} ${SYM[cur.op]} ${cur.B}`;
+  $('step').innerHTML = {
+    '+':'<b>Step 1:</b> Type both numbers into the boxes. Line up the digits: ones under ones!',
+    '-':'<b>Step 1:</b> Type both numbers into the boxes. Line up the digits: ones under ones!',
+    '*':'<b>Step 1:</b> Type both numbers into the boxes, lined up on the <b>right</b>. The 1-digit number goes under the ones.',
+    '/':'<b>Step 1:</b> Type the dividend (the number being shared) in the row and the divisor in the left box.'
+  }[cur.op];
+  $('check').textContent = 'Check my setup';
+  for(let c=0;c<lay.n;c++) if(focusCell('a',c)) break;
+}
+
+// expected-blank boxes may be left empty or filled with a 0
+const okDigit = (exp, val) => exp === '' ? (val==='' || val==='0') : val === exp;
+// little box above a column: carry / remainder / new top digit after borrowing
+const okAux = (exp, val, i) => exp !== '' ? val === exp
+  : (lay.op==='-' ? (val==='' || val===(lay.a[i]||'0')) : (val==='' || val==='0'));
+
+function checkSetup(){
+  setupTries++;
+  let all = true;
+  const mark = (el, good) => { el.classList.remove('ok','bad'); void el.offsetWidth; el.classList.add(good?'ok':'bad'); if(!good) all = false; };
+  for(const row of lay.setupRows)
+    for(let i=0;i<lay.n;i++) mark(cells[row][i], okDigit(lay[row][i], cells[row][i].value));
+  if(lay.op==='/') mark(cells.d[0], cells.d[0].value === lay.divisor);
+  if(!all){
+    const hint = {
+      '+':'Ones go under ones, tens under tens.',
+      '-':'Ones go under ones, tens under tens. The bigger number goes on top.',
+      '*':'Line the digits up on the right. The 1-digit number goes under the ones.',
+      '/':'The divisor goes in the left box. The dividend goes in the row.'
+    }[lay.op];
+    $('msg').innerHTML = `<span class="bad-t">Not quite – red boxes need fixing.<br><small>${hint} Empty spots can stay blank or be a 0.</small></span>`;
+    return;
+  }
+  const pts = setupTries===1 ? PTS.setup : Math.max(1, Math.round(PTS.setup*0.4));
+  addPts(pts);
+  phase = 'solve';
+  for(const row of lay.setupRows) Object.values(cells[row]).forEach(el => { el.disabled = true; el.classList.remove('ok'); el.classList.add('lock'); });
+  Object.values(cells.d).forEach(el => { el.disabled = true; el.classList.remove('ok'); el.classList.add('lock'); });
+  for(const row of ['c','s','r']) Object.values(cells[row]).forEach(el => el.disabled = false);
+  $('step').innerHTML = {
+    '+':'<b>Step 2:</b> Add from the <b>right</b>. If a column adds to 10 or more, write the carry in the little orange box on top.',
+    '-':'<b>Step 2:</b> Subtract from the <b>right</b>. If the top digit is too small, borrow from the left: in the little teal boxes write the <b>new</b> top digits (the one you borrowed from goes down by 1, the one that borrowed becomes 10 + its digit, like 12).',
+    '*':'<b>Step 2:</b> Multiply from the <b>right</b>. If an answer is 10 or more, write the tens part as a carry in the little orange box on top, and add it in on the next digit.',
+    '/':'<b>Step 2:</b> Divide from the <b>left</b>, one digit at a time. Write the answer digit on top. If there is a remainder, write it in the little orange box in front of the next digit.'
+      + (lay.hasR ? ' The number left over at the very end goes in the <b>R</b> box.' : '')
+  }[lay.op];
+  $('msg').innerHTML = `<span class="good">✅ Set up correctly! +${pts}</span>`;
+  $('check').textContent = 'Check my answer';
+  if(lay.op==='/'){ for(let c=0;c<lay.n;c++) if(lay.s[c]!=='' && focusCell('s',c)) break; }
+  else focusCell('s', lay.n-1);
+}
+
+function checkAnswer(){
+  let ansOK = true, auxOK = true;
+  for(let i=0;i<lay.n;i++) if(!okDigit(lay.s[i], cells.s[i].value)) ansOK = false;
+  if(lay.hasR && !okDigit(lay.remStr, cells.r[0].value)) ansOK = false;
+  for(let i=0;i<lay.n;i++) if(hasAuxBox(i) && !okAux(lay.aux[i], cells.c[i].value, i)) auxOK = false;
+  for(let i=0;i<lay.n;i++){
+    const el = cells.s[i]; el.disabled = true;
+    if(okDigit(lay.s[i], el.value)){ if(el.value!=='') el.classList.add('ok'); }
+    else { el.value = lay.s[i]; el.classList.add('reveal'); }
+  }
+  if(lay.hasR){
+    const el = cells.r[0]; el.disabled = true;
+    if(okDigit(lay.remStr, el.value)){ if(el.value!=='') el.classList.add('ok'); }
+    else { el.value = lay.remStr; el.classList.add('reveal'); }
+  }
+  for(let i=0;i<lay.n;i++){
+    if(!hasAuxBox(i)) continue;
+    const el = cells.c[i]; el.disabled = true;
+    if(okAux(lay.aux[i], el.value, i)){ if(lay.aux[i]!=='') el.classList.add('ok'); }
+    else { const exp = lay.aux[i]; el.value = exp; el.classList.add(exp!=='' ? 'reveal' : 'bad'); }
+  }
+  let pts = 0; if(ansOK) pts += PTS.ans; if(auxOK) pts += PTS.aux;
+  addPts(pts);
+  const word = {'+':'carries','-':'borrows','*':'carries','/':'remainders'}[lay.op];
+  const perfect = ansOK && auxOK;
+  let html;
+  if(perfect) html = `<span class="good">🎉 Perfect! +${qPts}</span>`;
+  else if(ansOK) html = `<span class="meh">Right answer! +${qPts}<br><small>But check your ${word} – the blue boxes show what they should be.</small></span>`;
+  else html = `<span class="bad-t">Not quite. The answer is ${answerText(cur)}<br><small>Blue boxes show the correct digits. Work column by column.</small></span>`;
+  endQuestion(perfect, html);
+}
+
+function endQuestion(perfect, html){
+  if(perfect){ streak++; best = Math.max(best, streak); } else streak = 0;
+  $('msg').innerHTML = html;
+  $('prog').style.width = (q/TOTAL*100)+'%';
+  updateStats();
+  phase = 'done';
+  $('check').classList.remove('hidden');
+  $('check').textContent = q>=TOTAL ? 'See results' : 'Next →';
+  $('check').focus();
+}
+
+function mainAction(){
+  if(phase==='setup') checkSetup();
+  else if(phase==='solve') checkAnswer();
+  else if(phase==='done') nextQ();
+}
+
+/* =================== Results / start =================== */
+function finish(){
+  show('end');
+  const max = TOTAL*20;
+  const pct = score/max;
+  let medal='🥉', c='Nice try! Practice makes perfect.';
+  if(pct>=0.98){ medal='🏆'; c='Perfect! You are a math master!'; }
+  else if(pct>=0.85){ medal='🥇'; c='Awesome work!'; }
+  else if(pct>=0.65){ medal='🥈'; c='Great job! Keep going.'; }
+  $('final').textContent = `Score: ${score} / ${max}`;
+  $('medal').textContent = medal;
+  $('comment').textContent = c + ` Best streak: ${best} in a row.`;
+}
+
+function start(){ q=0; score=0; streak=0; best=0; show('play'); nextQ(); }
+
+function selectTab(op){
+  opMode = op;
+  document.querySelectorAll('#ops .tab').forEach(x => x.classList.toggle('sel', x.dataset.op===op));
+  const info = INFO[op];
+  $('tabTitle').textContent = info.title;
+  $('tabDesc').textContent = info.desc;
+  $('tutLink').href = info.video; $('tutName').textContent = info.vname;
+  info.lv.forEach((t,i) => $('l'+(i+1)).textContent = t);
+}
+
+document.querySelectorAll('#ops .tab').forEach(b => { b.onclick = () => selectTab(b.dataset.op); });
+document.querySelectorAll('#lvls button').forEach(b => {
+  b.onclick = () => { level = +b.dataset.lvl; document.querySelectorAll('#lvls button').forEach(x => x.classList.toggle('sel', x===b)); };
+});
+$('go').onclick = start;
+$('again').onclick = start;
+$('home1').onclick = () => show('start');
+$('home2').onclick = () => show('start');
+$('check').onclick = mainAction;
+selectTab('add');
+</script>
+</body>
+</html>
