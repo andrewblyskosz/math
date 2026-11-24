@@ -54,6 +54,12 @@
   .cell{display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;color:#4c1d95;height:100%}
   .line{grid-column:1/-1;height:5px;background:#1f2937;border-radius:3px;margin:2px 0}
 
+  .box.wide{width:clamp(56px,16vw,76px)}
+  .box.under{border-bottom:5px solid #1f2937;border-radius:10px 10px 4px 4px}
+  .dvc{border-top:5px solid #1f2937;padding:4px 2px 0}
+  .dvc.first{border-left:5px solid #1f2937;border-top-left-radius:12px;padding-left:4px}
+  .cell.arrow{font-size:26px;color:#7c3aed}
+  .cell.rlab{font-size:22px}
   button.main{font-size:20px;font-weight:700;border:none;border-radius:12px;padding:12px 28px;margin-top:14px;background:#7c3aed;color:#fff;cursor:pointer}
   button.main:hover{background:#6d28d9}
   button.home{font-size:14px;font-weight:700;border:none;border-radius:10px;padding:6px 10px;background:#ede9fe;color:#4c1d95;cursor:pointer}
@@ -133,7 +139,7 @@ const INFO = {
   add:{video:'https://www.youtube.com/watch?v=jX9_3wj5zbM', vname:'adding', title:'Adding', desc:'Line up the digits, add from the right, and carry when a column adds to 10 or more.', lv:['2-digit numbers','3-digit numbers','4-digit numbers']},
   sub:{video:'https://www.youtube.com/watch?v=HlxqCdDrbdc', vname:'subtracting', title:'Subtracting', desc:'Line up the digits, subtract from the right, and borrow when the top digit is too small.', lv:['2-digit numbers','3-digit numbers','4-digit numbers']},
   mul:{video:'https://www.youtube.com/watch?v=g5TmDrXeiR8', vname:'multiplying', title:'Multiplying', desc:'Multiply each digit from the right, and carry when the answer is 10 or more.', lv:['2-digit × 1-digit','3-digit × 1-digit','4-digit × 1-digit']},
-  div:{video:'https://www.youtube.com/watch?v=HJYHNxS64f0', vname:'dividing', title:'Dividing', desc:'Divide from the left, one digit at a time. Write the remainder in front of the next digit.', lv:['2-digit, no remainder','3-digit, no remainder','3-digit, with remainder']}
+  div:{video:'https://www.youtube.com/watch?v=HJYHNxS64f0', vname:'dividing', title:'Dividing', desc:'Long division: divide, multiply, subtract, then bring down the next digit. Repeat until you run out of digits.', lv:['2-digit ÷ 1-digit','3-digit with remainder','4–5 digit ÷ 2-digit']}
 };
 
 let level = 1, opMode = 'add', q = 0, score = 0, streak = 0, best = 0;
@@ -160,15 +166,14 @@ function makeMul(){
 }
 
 function makeDiv(){
-  const d = rnd(2,9);
-  let S, hasR = false;
-  if(level===1){ S = d * rnd(Math.max(3,Math.ceil(20/d)), Math.floor(99/d)); }
-  else if(level===2){ S = d * rnd(Math.ceil(100/d), Math.floor(999/d)); }
-  else {
-    hasR = true;
+  let d, S, hasR = false;
+  if(level===1){ d = rnd(2,9); S = d * rnd(Math.max(3,Math.ceil(20/d)), Math.floor(99/d)); }      // 2-digit, exact
+  else if(level===2){                                                                              // 3-digit, remainder
+    d = rnd(2,9); hasR = true;
     const r = Math.random()<0.2 ? 0 : rnd(1,d-1);
     S = d * rnd(Math.ceil(100/d), Math.floor((999-r)/d)) + r;
   }
+  else { d = rnd(12,29); S = d * rnd(100,399); }                                                   // 4-5 digit ÷ 2-digit, exact
   return {op:'/', A:String(S), B:String(d), d, S, hasR};
 }
 
@@ -220,23 +225,29 @@ function layoutMul(p){
 }
 
 function layoutDiv(p){
-  const a = String(p.S).split(''), n = a.length;
-  const s = [], aux = new Array(n).fill('');
-  let rem = 0, started = false;
-  for(let c=0; c<n; c++){
-    const v = rem*10 + (+a[c]);
-    const qd = Math.floor(v / p.d);
-    rem = v % p.d;
-    if(qd>0) started = true;
-    s.push(started ? String(qd) : '');                       // no answer digit in front of the first one
-    if(c<n-1) aux[c+1] = rem>0 ? String(rem) : '';
+  // classic long division: every step = divide (quotient digit), multiply (product), subtract (remainder), bring down
+  const a = String(p.S).split(''), n = a.length, d = p.d;
+  let p0 = 0, pref = +a[0];
+  while(pref < d){ p0++; pref = pref*10 + (+a[p0]); }          // first digits that are big enough to divide
+  const steps = []; let rem = 0, ord = 100;
+  for(let pp=p0; pp<n; pp++){
+    const partial = pp===p0 ? pref : rem*10 + (+a[pp]);
+    const qd = Math.floor(partial/d), prod = qd*d;
+    rem = partial - prod;
+    const st = {p:pp, qd:String(qd), prod:String(prod), last:pp===n-1};
+    st.qOrd = ord++;
+    st.pOrd = st.prod.split('').map(() => ord++);
+    st.rCells = rem===0 ? [''] : String(rem).split('');        // a remainder of 0 can be left blank
+    st.rOrd = st.rCells.map(() => ord++);
+    if(!st.last) st.bOrd = ord++;
+    steps.push(st);
   }
-  return {op:'/', n, pt:-1, a, b:[], s, aux, rows:['s','c','a'], setupRows:['a'],
-          divisor:String(p.d), hasR:p.hasR, remStr:String(rem)};
+  return {op:'/', n, pt:-1, a, b:[], s:[], aux:[], rows:[], setupRows:['a'],
+          divisor:String(d), hasR:p.hasR, remStr:String(rem), steps, rOrdBox:ord};
 }
 
 const layoutFor = p => p.op==='*' ? layoutMul(p) : p.op==='/' ? layoutDiv(p) : layoutAddSub(p);
-const hasAux = l => l.aux.some(x => x!=='');
+const hasAux = l => l.op==='/' ? true : l.aux.some(x => x!=='');
 const answerText = p => p.op==='*' ? String(p.P)
   : p.op==='/' ? String(Math.floor(p.S/p.d)) + (p.hasR ? ' R ' + (p.S%p.d) : '')
   : String(p.res);
@@ -245,7 +256,62 @@ const answerText = p => p.op==='*' ? String(p.P)
 const hasAuxBox = i => lay.op==='-' ? true : lay.op==='/' ? i>0 : i<lay.n-1;
 const solveDir = () => lay.op==='/' ? 1 : -1;                  // divide goes left->right
 
+function buildGridDiv(){
+  const g = $('grid'); g.innerHTML = '';
+  cells = {c:{}, a:{}, b:{}, s:{}, d:{}, r:{}, w:{}};
+  const n = lay.n, hasR = lay.hasR, total = 1 + n + (hasR ? 2 : 0);
+  g.style.gridTemplateColumns = new Array(total).fill('auto').join(' ');
+  const blank = () => document.createElement('div');
+  const txt = (t, cls) => { const x = document.createElement('div'); x.className = 'cell ' + (cls||''); x.textContent = t; return x; };
+  const mk = (row, key, role, exp, cls, maxLen, ord) => {
+    const inp = document.createElement('input');
+    inp.className = 'box ' + cls; inp.type = 'text'; inp.inputMode = 'numeric'; inp.maxLength = maxLen; inp.autocomplete = 'off';
+    inp.dataset.row = row; inp.dataset.col = key; inp.dataset.role = role; inp.dataset.exp = exp; inp.dataset.ord = ord;
+    inp.addEventListener('input', onInput);
+    inp.addEventListener('keydown', onKey);
+    inp.addEventListener('focus', () => inp.select());
+    cells[row][key] = inp;
+    return inp;
+  };
+  const fresh = () => { const r = []; for(let i=0;i<total;i++) r.push(blank()); return r; };
+  const emit = arr => arr.forEach(x => g.appendChild(x));
+
+  // row 1: answer digits on top (and the R box when there is a remainder)
+  const r0 = fresh();
+  lay.steps.forEach(s => { r0[s.p+1] = mk('s', s.p, 'ans', s.qd, '', 1, s.qOrd); });
+  if(hasR){ r0[1+n] = txt('R','rlab'); r0[2+n] = mk('r', 0, 'ans', lay.remStr, '', lay.divisor.length, lay.rOrdBox); }
+  emit(r0);
+  // row 2: divisor on the left, dividend inside the bracket
+  const r1 = fresh();
+  r1[0] = mk('d', 0, 'setup', lay.divisor, lay.divisor.length>1 ? 'wide' : '', lay.divisor.length, 0);
+  lay.a.forEach((ch,i) => {
+    const w = document.createElement('div'); w.className = 'dvc' + (i===0 ? ' first' : '');
+    w.appendChild(mk('a', i, 'setup', ch, '', 1, 1+i)); r1[1+i] = w;
+  });
+  emit(r1);
+  // working rows: multiply + subtract, then the remainder with the next digit brought down
+  lay.steps.forEach((s,si) => {
+    const pr = fresh(); pr[0] = txt('−','sign');
+    const L = s.prod.length;
+    s.prod.split('').forEach((ch,k) => { pr[s.p+1-(L-1)+k] = mk('w','p'+si+'_'+k,'work',ch,'under',1,s.pOrd[k]); });
+    if(!s.last) pr[s.p+2] = txt('↓','arrow');
+    emit(pr);
+    const dr = fresh(), RL = s.rCells.length;
+    s.rCells.forEach((ch,k) => { dr[s.p+1-(RL-1)+k] = mk('w','r'+si+'_'+k,'work',ch,'',1,s.rOrd[k]); });
+    if(!s.last) dr[s.p+2] = mk('w','b'+si,'work',lay.a[s.p+1],'',1,s.bOrd);
+    emit(dr);
+  });
+}
+
+function seqNav(el, dir){
+  const arr = [...$('grid').querySelectorAll('input')].sort((x,y) => x.dataset.ord - y.dataset.ord);
+  let i = arr.indexOf(el) + dir;
+  while(i>=0 && i<arr.length){ if(!arr[i].disabled){ arr[i].focus(); return true; } i += dir; }
+  return false;
+}
+
 function buildGrid(){
+  if(lay.op==='/') return buildGridDiv();
   const g = $('grid');
   g.innerHTML = '';
   cells = {c:{}, a:{}, b:{}, s:{}, d:{}, r:{}};
@@ -303,6 +369,7 @@ function onInput(e){
   el.value = el.value.replace(/\D/g,'').slice(-el.maxLength);
   el.classList.remove('ok','bad','reveal');
   if(!el.value) return;
+  if(lay.op==='/'){ if(el.value.length >= el.maxLength) seqNav(el,1); return; }
   const row = el.dataset.row, col = +el.dataset.col;
   if(row==='c' && lay.op==='-') return;                  // borrow boxes hold 2 digits: don't jump away
   if(phase==='setup'){
@@ -315,6 +382,12 @@ function onInput(e){
 }
 function onKey(e){
   const el = e.target, row = el.dataset.row, col = +el.dataset.col;
+  if(lay.op==='/'){
+    if(e.key==='Enter'){ e.preventDefault(); mainAction(); }
+    else if(e.key==='ArrowLeft' || (e.key==='Backspace' && !el.value)){ e.preventDefault(); seqNav(el,-1); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); seqNav(el,1); }
+    return;
+  }
   if(e.key==='Enter'){ e.preventDefault(); mainAction(); }
   else if(e.key==='ArrowLeft'){ e.preventDefault(); if(row==='r') focusCell('s',lay.n-1); else moveH(row,col,-1); }
   else if(e.key==='ArrowRight'){ e.preventDefault(); if(row==='s' && col===lay.n-1 && lay.hasR) focusCell('r',0); else moveH(row,col,1); }
@@ -349,16 +422,18 @@ function nextQ(){
   } while(!lay.hasAux && Math.random() < 0.8 && tries < 30);   // most problems need a carry / borrow / remainder
   phase = 'setup'; setupTries = 0;
   buildGrid();
-  for(const r of ['c','s','r']) Object.values(cells[r]).forEach(el => el.disabled = true);
+  if(lay.op==='/') document.querySelectorAll('#grid input').forEach(el => { if(el.dataset.role!=='setup') el.disabled = true; });
+  else for(const r of ['c','s','r']) Object.values(cells[r]).forEach(el => el.disabled = true);
   $('problem').textContent = `${cur.A} ${SYM[cur.op]} ${cur.B}`;
   $('step').innerHTML = {
     '+':'<b>Step 1:</b> Type both numbers into the boxes. Line up the digits: ones under ones!',
     '-':'<b>Step 1:</b> Type both numbers into the boxes. Line up the digits: ones under ones!',
     '*':'<b>Step 1:</b> Type both numbers into the boxes, lined up on the <b>right</b>. The 1-digit number goes under the ones.',
-    '/':'<b>Step 1:</b> Type the dividend (the number being shared) in the row and the divisor in the left box.'
+    '/':'<b>Step 1:</b> Type the divisor (the number you divide by) on the left, and the dividend (the number being shared) inside the bracket.'
   }[cur.op];
   $('check').textContent = 'Check my setup';
-  for(let c=0;c<lay.n;c++) if(focusCell('a',c)) break;
+  if(lay.op==='/') focusCell('d',0);
+  else for(let c=0;c<lay.n;c++) if(focusCell('a',c)) break;
 }
 
 // expected-blank boxes may be left empty or filled with a 0
@@ -367,7 +442,57 @@ const okDigit = (exp, val) => exp === '' ? (val==='' || val==='0') : val === exp
 const okAux = (exp, val, i) => exp !== '' ? val === exp
   : (lay.op==='-' ? (val==='' || val===(lay.a[i]||'0')) : (val==='' || val==='0'));
 
+function checkSetupDiv(){
+  setupTries++;
+  let all = true;
+  document.querySelectorAll('#grid input[data-role="setup"]').forEach(el => {
+    const good = el.value === el.dataset.exp;
+    el.classList.remove('ok','bad'); void el.offsetWidth; el.classList.add(good ? 'ok' : 'bad');
+    if(!good) all = false;
+  });
+  if(!all){
+    $('msg').innerHTML = '<span class="bad-t">Not quite – red boxes need fixing.<br><small>The divisor goes on the left of the bracket. The dividend goes inside it, one digit per box.</small></span>';
+    return;
+  }
+  const pts = setupTries===1 ? PTS.setup : Math.max(1, Math.round(PTS.setup*0.4));
+  addPts(pts);
+  phase = 'solve';
+  document.querySelectorAll('#grid input').forEach(el => {
+    if(el.dataset.role==='setup'){ el.disabled = true; el.classList.remove('ok'); el.classList.add('lock'); }
+    else el.disabled = false;
+  });
+  $('step').innerHTML = '<b>Step 2:</b> Work down the page. <b>1)</b> How many times does the divisor fit? Write it on top. <b>2)</b> Multiply and write the answer under the number. <b>3)</b> Subtract. <b>4)</b> Bring down the next digit (↓). Repeat!'
+    + (lay.hasR ? ' The number left over at the very end goes in the <b>R</b> box.' : '');
+  $('msg').innerHTML = `<span class="good">✅ Set up correctly! +${pts}</span>`;
+  $('check').textContent = 'Check my answer';
+  const first = [...document.querySelectorAll('#grid input')].filter(el => !el.disabled).sort((x,y) => x.dataset.ord - y.dataset.ord)[0];
+  if(first) first.focus();
+}
+
+function checkAnswerDiv(){
+  let ansOK = true, auxOK = true;
+  document.querySelectorAll('#grid input').forEach(el => {
+    if(el.dataset.role==='setup') return;
+    const exp = el.dataset.exp, val = el.value;
+    el.disabled = true;
+    if(okDigit(exp, val)){ if(val!=='') el.classList.add('ok'); }
+    else {
+      el.value = exp; el.classList.add(exp!=='' ? 'reveal' : 'bad');
+      if(el.dataset.role==='ans') ansOK = false; else auxOK = false;
+    }
+  });
+  let pts = 0; if(ansOK) pts += PTS.ans; if(auxOK) pts += PTS.aux;
+  addPts(pts);
+  const perfect = ansOK && auxOK;
+  let html;
+  if(perfect) html = `<span class="good">🎉 Perfect! +${qPts}</span>`;
+  else if(ansOK) html = `<span class="meh">Right answer! +${qPts}<br><small>But check your working (multiplying, subtracting, bringing down) – the blue boxes show what they should be.</small></span>`;
+  else html = `<span class="bad-t">Not quite. The answer is ${answerText(cur)}<br><small>Blue boxes show the correct digits. Work down one step at a time.</small></span>`;
+  endQuestion(perfect, html);
+}
+
 function checkSetup(){
+  if(lay.op==='/') return checkSetupDiv();
   setupTries++;
   let all = true;
   const mark = (el, good) => { el.classList.remove('ok','bad'); void el.offsetWidth; el.classList.add(good?'ok':'bad'); if(!good) all = false; };
@@ -404,6 +529,7 @@ function checkSetup(){
 }
 
 function checkAnswer(){
+  if(lay.op==='/') return checkAnswerDiv();
   let ansOK = true, auxOK = true;
   for(let i=0;i<lay.n;i++) if(!okDigit(lay.s[i], cells.s[i].value)) ansOK = false;
   if(lay.hasR && !okDigit(lay.remStr, cells.r[0].value)) ansOK = false;
